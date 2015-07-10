@@ -1,0 +1,3 @@
+_auth_url:'http://localhost:5000/v2.0'
+_glance_url:'http://localhost:5000/v2.0'
+_root_site:'TestSite'

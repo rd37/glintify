@@ -1,0 +1,410 @@
+#!/bin/env python
+#
+# glint_backup is a stand alone utility for creating incremental backups of glance
+# repositories. for more information, see:
+#
+#               https://github.com/hep-gc/glint/wiki/glint_backup
+#
+
+import hashlib
+import logging
+import json
+import os
+from subprocess import Popen, PIPE
+import sys,array
+import time
+
+from keystoneclient.v2_0 import client as keystone_api
+import glanceclient as glance_api
+from glintargparse import GlintArgumentParser
+import glint_print_util as gl_util
+
+# Set environment, determine if master or slave, and call the appropriate function.
+def main (argv):
+    # Set the system command path. 
+    os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
+
+    gap = GlintArgumentParser()
+    gap.init_restore_arg_parser()
+    args = gap.parser.parse_args()
+    #print "args are %s"%args
+    # Set the configuration file path.
+    
+    if args.cfgfile is not None:
+        print "Glint Restore is Setting config file to %s"%args.cfgfile[0]
+        config_file = args.cfgfile[0]
+       
+    else:
+        config_file = '/usr/local/etc/glint/glint_backup.conf'
+
+    # Read JSON configuration file.
+    #   confile=open('/usr/local/etc/glint_backup.conf')
+    confile=open(config_file)
+    config = json.load(confile)
+    confile.close()
+
+    # Establish a log file.
+    global logger
+    logger = logging.getLogger('glint_backup')
+    handler = logging.FileHandler(config['glint_backup_logfile'])
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler) 
+    logger.setLevel(logging.INFO)
+
+    # Ensure we are not running as root.
+    uid = os.getuid()
+    if uid == 0:
+        logger.error('Error: glint_backup must not be run as root; terminating.')
+        return 1
+
+    # Ensure only one glint_backup is running at one time.
+    p = Popen(['ps', '--no-headers', '-fC', 'glint_backup'], stdout=PIPE, stderr=PIPE)
+    stdout, stderr = p.communicate()
+    
+    if stderr != '' or len(stdout.split()) > 1:
+        print 'Error: There is more than one glint_restore running. This one is terminating.'
+        logger.error('Error: There is more than one glint_restore running. This one is terminating.')
+        return 1
+
+    logger.info('Starting.')
+
+    # Authenticate and authorize with keystone.
+    p = Popen(['hiera', '-c', config['glint_backup_hiera_config'], config['glint_backup_admin_pw_key']], stdout=PIPE, stderr=PIPE)
+    pw, stder = p.communicate()
+    
+    #print "PW for %s is %s error is %s"%(config['glint_backup_admin_pw_key'],pw[:-1],stder)
+    try:
+        keystone = keystone_api.Client(auth_url=config['glint_backup_auth_URL'],
+            tenant_name=config['glint_backup_admin_tenant'],
+            username=config['glint_backup_admin_user'],
+            password=pw[:-1])
+    except:
+        print 'Error: unable to connect to keystone at "%s"; terminating.'%(config['glint_backup_auth_URL'])
+        logger.error('Error: unable to connect to keystone at "%s"; terminating.'%(config['glint_backup_auth_URL']))
+        return 1
+
+    # Establish glance connectivity.
+    try:
+        glance_endpoint = keystone.service_catalog.url_for(service_type='image',endpoint_type='publicURL')
+        glance = glance_api.Client('2',glance_endpoint,token=keystone.auth_token)
+    except:
+        print 'Error: unable to connect to glance at "%s"; terminating.'%(glance_endpoint)
+        logger.error('Error: unable to connect to glance at "%s"; terminating.'%(glance_endpoint))
+        return 1
+    #print "Now for the hard work"
+    
+    #check that user specified a version number and ensure it less that versions available
+    # Determine previous backup directory (possibly none).
+    try:
+        version_count = len(os.listdir(config['glint_backup_dir']))
+    except:
+        logger.error('Error: unable to retrieve the count of current backup versions. Is the backup directory ("%s") mounted?'%(config['glint_backup_dir']))
+        return 1
+    #print "showing version count to be %s version is %s int type version is %s"%(version_count,args.version[0],int(args.version[0]))
+    
+    if version_count == 0:
+        print "No previous backups detected"
+        logger.error("There are no backup version to restore from")
+        return 1
+    if version_count < int(args.version[0]):
+        #print "Version %s does not exist yet ;) current version is %s"%(int(args.version[0]),version_count)
+        logger.error("This version %s does not exist yet ;) current max version is %s"%(int(args.version[0]),version_count) )
+        return 1
+    
+    if args.list_images is True :
+        if args.tenant is not None:
+            #max_column_length=array.array('i',(0 for i in range(0,6)))
+            titles = ['version','tenant','name','format','description','in-use']
+            max_column_length=[]
+            for title in titles:
+                max_column_length.append( len(title) )
+            row_entries=[]
+            list_version_tenant_dir = '%s/%04.0f/%s'%(config['glint_backup_dir'],int(args.version[0]),args.tenant[0])
+            images = os.listdir(list_version_tenant_dir)
+            for image in images:
+                if 'metadata' in image:
+                    row_data = {}
+                    meta_file = open(  '%s/%04.0f/%s/%s'%(config['glint_backup_dir'],int(args.version[0]),args.tenant[0],image)   ,'r')
+                    meta_json_string = meta_file.readlines()
+                    meta_file.close()
+                    
+                    image_version = args.version[0]
+                    image_tenant = args.tenant[0]
+                    #image_id = get_meta_image_info(meta_json_string[0],"id")
+                    image_name = get_meta_image_info(meta_json_string[0],"name")
+                    #image_status = get_meta_image_info(meta_json_string[0],"status")
+                    #image_visibility = get_meta_image_info(meta_json_string[0],"visibility")
+                    
+                    image_format = get_meta_image_info(meta_json_string[0],"disk_format")
+                    image_description = get_meta_image_info(meta_json_string[0],"description")
+                    if image_description is None:
+                        image_description = ''
+                    #image_checksum = get_meta_image_info(meta_json_string[0],"checksum")
+                    image_in_use = is_image_in_use(glance,keystone,image_tenant,image_name)
+                    
+                    row_data['version']=image_version
+                    row_data['tenant']=image_tenant
+                    #row_data['id']=image_id
+                    row_data['name']=image_name
+                    #row_data['status']=image_status
+                    #row_data['visibility']=image_visibility
+                    row_data['format']=image_format
+                    #row_data['checksum']=image_checksum
+                    row_data['description']=image_description
+                    row_data['in-use']=image_in_use
+                    #print "%s"%image_name
+                    if len( image_version ) > max_column_length[0]:
+                        max_column_length[0] = len( image_version )
+                    if len( image_tenant ) > max_column_length[1]:
+                        max_column_length[1] = len( image_tenant )    
+                    if len( image_name ) > max_column_length[2]:
+                        max_column_length[2] = len( image_name )
+                    if len( image_format) > max_column_length[3]:
+                        max_column_length[3] = len( image_format )
+                    if len( image_description ) > max_column_length[4]:
+                        max_column_length[4] = len( image_description )
+                    if len( image_in_use) > max_column_length[5]:
+                        max_column_length[5] = len( image_in_use)
+                        
+                    row_entries.append(row_data)
+            #print "List Column sizes %s"%max_column_length
+            #print "Data array %s"%row_entries
+            gl_util.print_line(max_column_length)
+            gl_util.print_line_data(['version','tenant','name','format','description','in-use'],max_column_length)
+            gl_util.print_line(max_column_length)
+            for row in row_entries:
+                gl_util.print_line_data([row['version'],row['tenant'],row['name'],row['format'],row['description'],row['in-use']],max_column_length)
+            gl_util.print_line(max_column_length)
+            
+        else:
+            print "Please Specify a Tenant -t or --tenant option when listing images"
+        return 1
+    
+    #once version number is identified
+    #get all meta-data from the backup-repo
+    #so for each tenant get meta-data of each image
+    restore_version_dir = '%s/%04.0f'%(config['glint_backup_dir'],int(args.version[0]))
+    if not os.path.exists(restore_version_dir):
+        logger.error('Previous backup directory "%s" does not exist.'%(restore_version_dir))
+        return 1
+    #print "The restore directory is %s"%restore_version_dir
+    os_restore_version_dir = os.listdir(restore_version_dir)
+    
+    #remove the __ from the list
+    idx_rem=[]
+    for idx,entry in enumerate(os_restore_version_dir):
+        if '__' in entry:
+            #print "found %s add %s to idx removals "%(entry,idx)
+            idx_rem.append(entry)
+    
+    for entry in idx_rem:
+        os_restore_version_dir.remove(entry)
+            
+    #del os_restore_version_dir[0]
+    #del os_restore_version_dir[0]
+    
+    if args.tenant is not None:
+        arg_tenant = args.tenant[0]
+        tenant_removals = []
+        for tenant in os_restore_version_dir:
+            if tenant != arg_tenant:
+                tenant_removals.append(tenant)
+        for tenant_rem in tenant_removals:
+            #print "Removing Tenant %s from list of version updates "%tenant_rem
+            os_restore_version_dir.remove(tenant_rem)
+    #print "Items in directory are %s"%os_restore_version_dir
+    logger.info("Items in directory are %s"%os_restore_version_dir)
+    
+    if len(os_restore_version_dir) == 0:
+        print "There are no Valid Tenants in Version %s did you specify command line argument '-tenant NAME' may wrong tenant name?"%(int(args.version[0]))
+        logger.info("There are no Valid Tenants in Version %s did you specify command line argument '-tenant NAME' may wrong tenant name?"%(int(args.version[0])))
+    #for each tenant in version list do this
+    for tenant in os_restore_version_dir:
+        #check if tenant exists
+        tenant_exists=False
+        keystone_tenant=None
+        images={}
+        keystone_tenants = sorted(keystone.tenants.list())
+        #print "Found keystone tenants %s"%keystone_tenants
+        for key_ten in keystone_tenants:
+            #print "Compare key_ten %s to %s"%(key_ten.name,tenant)
+            if key_ten.name == tenant:
+                tenant_exists=True
+                keystone_tenant=key_ten
+                try:
+                    kwargs = {'filters': {'owner': keystone_tenant.id, 'status': 'active'}}
+                    images[keystone_tenant.name] = sorted(glance.images.list(**kwargs))
+                    #print "Found Tenant images %s"%images
+                except:
+                    print 'Error: unable to retrieve image list for tenant "%s"; terminating.'%(keystone_tenant.name)
+                    logger.error('Error: unable to retrieve image list for tenant "%s"; terminating.'%(keystone_tenant.name))
+                    return 1
+                
+        
+        #for each meta data 
+        restore_versioned_tenant_dir = '%s/%04.0f/%s'%(config['glint_backup_dir'],int(args.version[0]),tenant)
+        if not os.path.exists(restore_versioned_tenant_dir):
+            logger.error('Restore directory "%s" does not exist.'%(restore_versioned_tenant_dir))
+            return 1
+        #print "Get meta data from tenant dir at %s"%restore_versioned_tenant_dir
+        os_restore_versioned_tenant_dir = os.listdir(restore_versioned_tenant_dir)
+        #print "Images in %s are %s"%(tenant,os_restore_versioned_tenant_dir)
+        
+        for metadata in os_restore_versioned_tenant_dir:
+            if 'metadata' in metadata and tenant_exists:
+                #print "found meta data file %s"%metadata
+                meta_file = open(  '%s/%04.0f/%s/%s'%(config['glint_backup_dir'],int(args.version[0]),tenant,metadata)   ,'r')
+                meta_json_string = meta_file.readlines()
+                meta_file.close()
+                
+                image_id = get_meta_image_info(meta_json_string[0],"id")
+                image_name = get_meta_image_info(meta_json_string[0],"name")
+                image_meta_checksum = get_meta_image_info(meta_json_string[0],"checksum")
+                
+                
+                #print "id %s cksum %s calc cks %s data:%s"%(image_id,image_meta_checksum,image_calc_meta_checksum,meta_json_string[0])
+                
+                #loop through images looking for matched image id
+                #found_image=False
+                glance_img=None
+                for glance_image in images[tenant]:
+                    #if glance_image['id'] == image_id:
+                    #print "Backup Tenant dir %s :: For meta image name %s compare to glance image list name %s"%(tenant,image_name,glance_image['name'])
+                    if glance_image['checksum'] == image_meta_checksum and glance_image['name'] == image_name:
+                        #print "Found match for image name %s"%(image_name)
+                        glance_img=glance_image
+                        #check if image is the same as in glance - checksum compare
+                        #if glance_image['checksum'] == image_meta_checksum:
+                        #    print "Same checksum so no changes"
+                        #else:
+                        #    print "Diff checksum so Image has changed slightly so Update Image"
+                
+                #check if user specified commandline argument filtering which images to replace
+                if args.image_name is not None and args.tenant is not None and glance_img is None:
+                    #print "tenant and image filtering %s compare to %s"%(image_name,args.image_name[0])
+                    found_image=False
+                    for find_img in args.image_name:
+                        if image_name == find_img:
+                            found_image=True
+                    
+                    if found_image:
+                        glance_img=None
+                    else:
+                        #this will prevent the image from being backed up
+                        glance_img=""
+                
+                if glance_img is None:
+                    #print "Need to create New Image with %s"%meta_json_string
+                    #print "file is %s"%metadata
+                    glance_ep_dest = keystone.service_catalog.url_for(service_type='image',endpoint_type='publicURL')
+                    glance_dest = glance_api.Client('1',glance_ep_dest,token=keystone.auth_token)
+                    
+                    file_loc='%s/%04.0f/%s/%s'%(config['glint_backup_dir'],int(args.version[0]),tenant,image_id)
+                    fimage = open(file_loc)
+                    image_name = get_meta_image_info(meta_json_string[0],"name")
+                    image_vis = get_meta_image_info(meta_json_string[0],"protected")
+                    image_format = get_meta_image_info(meta_json_string[0],"disk_format")
+                    image_cont_fmt = get_meta_image_info(meta_json_string[0],"container_format")
+                    #print "Try create image using tenant %s with %s"%(tenant,file_loc)
+                    #print "using data image_name %s :: image_vis %s :: image_format %s :: image cont fmt %s :: owner %s"%(image_name,image_vis, image_format,image_cont_fmt,keystone_tenant.id)
+                    glance_dest.images.create(name=image_name,is_public=image_vis,disk_format=image_format,container_format=image_cont_fmt,owner=keystone_tenant.id,data=fimage)
+                    
+                    
+                    
+                #if checksum is different or if images does not exist,
+                #then remove old image and replace with new one
+        if tenant_exists is False:
+            logger.error('Tenant "%s" does not exist ... ignoring image backup'%(tenant))
+            
+    #done
+
+def is_image_in_use(glance,keystone,tenant,image_name):
+    #print "check if image %s is in use"%image_name
+    keystone_tenants = sorted(keystone.tenants.list())
+    for key_ten in keystone_tenants:
+        #print "Compare key_ten %s to %s"%(key_ten.name,tenant)
+        if key_ten.name == tenant:
+            #print "Found Tenant"
+            #tenant_exists=True
+            keystone_tenant=key_ten
+            try:
+                kwargs = {'filters': {'owner': keystone_tenant.id, 'status': 'active'}}
+                images = sorted(glance.images.list(**kwargs))
+                #print "Found Tenant images %s"%images
+                for image in images:
+                    #print "Compare %s to %s"%(image['name'],image_name)
+                    if image['name'] == image_name:
+                        return 'True'
+                    
+            except:
+                print 'Error: unable to retrieve image list for tenant "%s"; terminating.'%(keystone_tenant.name)
+                logger.error('Error: unable to retrieve image list for tenant "%s"; terminating.'%(keystone_tenant.name))
+                return 'False Error'
+    return 'False'
+
+def get_meta_image_info(meta_data,info):
+    json_obj = json.loads(meta_data)
+    
+    found = False
+    for item in json_obj:
+        if found is True:
+            return item
+        if item == info:
+            found = True
+    return None
+
+# get_checksum: Return the checksum from an image's metadata list.
+def get_checksum (metadata):
+    global logger
+    logger.debug('get_checksum input metadata=%s'%(metadata))
+    for i in range(0, len(metadata), 2):
+        if metadata[i] == 'checksum':
+            logger.debug('get_checksum returning "%s"'%(metadata[i+1]))
+            return metadata[i+1]
+
+    logger.debug('get_checksum returning empty string.')
+    return ''
+
+# get_version_hash: Return a unique hash string for the backup version.
+def get_version_hash (tenants, tenant_xref, images, image_xref):
+    hash = []
+    for tenant in tenants:
+        if tenant_xref[tenant.name] == '__deleted__':
+            continue
+
+        hash.append(tenant.name)
+        hash.append(tenant.id)
+
+        for image in images[tenant.name]:
+            if image_xref[image.id] == '__deleted__':
+                continue
+
+            hash.append(image_xref[image.id])
+
+    return hashlib.md5(str(hash)).hexdigest()
+
+# md5sum: Return the image checksum for the specified file.
+def md5sum(filename, blocksize=65536):
+    hash = hashlib.md5()
+    with open(filename, "r+b") as fd:
+        for block in iter(lambda: fd.read(blocksize), ""):
+            hash.update(block)
+    return hash.hexdigest()
+
+# set_checksum: update the checksum within an image's metadata list.
+def set_checksum (metadata, new_checksum):
+    global logger
+    logger.debug('set_checksum input metadata=%s, new_checksum=%s.'%(metadata, new_checksum))
+    for i in range(0, len(metadata), 2):
+        if metadata[i] == 'checksum':
+            logger.debug('set_checksum success.')
+            metadata[i+1] = new_checksum
+            return metadata[i+1]
+
+    logger.debug('set_checksum failed.')
+    return ''
+
+# Entry.
+if __name__ == "__main__":
+    main(sys.argv)
