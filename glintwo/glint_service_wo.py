@@ -86,7 +86,7 @@ class ExampleApp(object):
         Controller #2: do something with a URI arg to show dynamic behavior.
         '''
         return webob.Response(
-            body='<html><body>Dear %s, you\'re a shmuck.</body></html>' % name
+            body='<html><body>Dear %s, you\'re a cool dude.</body></html>' % name
         )
  
 def main():
