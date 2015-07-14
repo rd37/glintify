@@ -172,7 +172,7 @@ def addcredential(request,session):
             session.commit()
         return json.dumps({"Result":"Sites: add Credential"})
     except Exception as e:
-        return json.dumps({"Result":"%s"%e})
+        return json.dumps({"Result Error":"error %s"%e})
     
 
 
