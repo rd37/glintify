@@ -62,13 +62,10 @@ class GlintService(object):
     # Our routes map URIs to methods of this app, and define how to extract args from requests
     # Complaint: in order to make this RESTful, you have to plan routes yourself
     map = routes.Mapper()
-    map.connect('index', '/', method='index')
-    map.connect('greet', '/greet/{name}', method='greet')
-    map.connect('django_test', '/django', method='django_test')
-    map.connect('alchemy_get', '/alchemy_get/{un}', method='alchemy_get')
-    
     #url(r'^/imagedistribution/$', jsonservices.getImages,name='getImages'),
     map.connect('image_dist/imagedistribution', '/image_dist/imagedistribution/', method='getImages')
+    map.connect('image_dist/addcredential', '/image_dist/addcredential/', method='addCredential')
+    map.connect('image_dist/listsites', '/image_dist/listsites/', method='listSites')
     
     @webob.dec.wsgify
     def __call__(self, req):
@@ -96,47 +93,25 @@ class GlintService(object):
         return webob.Response(
             body='%s'%response
         )
-        
-    def alchemy_get(self,req,un):
-        print "getting alcehcmy"
+    
+    def listSites(self,req):
+        print "list sites"
         session = self.Session()
-        our_users = session.query(User).all()
-        
+        response = glintclient.listsites(req,session);
+        print "Received Response %s"%response
         return webob.Response(
-            body='<html><body>First user %s </body></html>'%our_users
+            body='%s'%response
         )
-        
-    def django_test(self, req):
+    
+    def addCredential(self,req):
+        print "Add Credential"
         session = self.Session()
-        ed_user = User(username='rondes', tenent='HEP', token='edspassword',lastlogin=dt.datetime.today())
-        session.add(ed_user)
-        session.commit()
+        response = glintclient.addcredential(req,session);
+        print "Received Response %s"%response
         return webob.Response(
-            body='<html><body>What wait %s ok a second</body></html>'%ed_user.id
-        )
+            body='%s'%response
+        )    
         
-    def index(self, req):
-        '''
-        Controller #1: a landing page.
-        '''
-        return webob.Response(
-            body='''<html><body>
-                    <p>Your name: 
-                        <form onSubmit="location.href='/greet/' + encodeURI(document.getElementById('name_input').value); return false;">
-                            <input type="text" value="" id="name_input"/>
-                        </form>
-                    </p>
-                </body></html>'''
-        )
-        
-    def greet(self, req, name=None):
-        '''
-        Controller #2: do something with a URI arg to show dynamic behavior.
-        '''
-        return webob.Response(
-            body='<html><body>Dear %s, you\'re a cool dude.</body></html>' % name
-        )
- 
     def init_db(self):
         print "initialize db"
         self.engine = create_engine('sqlite:///:memory2:', echo=True)

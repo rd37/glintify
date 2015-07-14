@@ -89,7 +89,58 @@ def getImages(request,session):
     except Exception as e:
         print "Exception occurred %s"%e
 
+def listsites(request,session):
+    print "try to list sites-oK"
+    try:
+        os_user = ksclient.Client(insecure=True,token=request.POST['USER_TOKEN'],tenant_name=request.POST['USER_TENANT'],auth_url=_auth_url)
+        s = session.query(Site).all()
+        #s = site.objects.filter()
+        
+        response = []
+        for sobj in s:
+            sobjstr = '{"name":"%s","url":"%s:%s/%s","authport":"%s","version":"%s","type":"%s","pk":"%s"}'%(sobj.name,sobj.url,sobj.authport,sobj.version,sobj.authport,sobj.version,sobj.type,sobj.pk)
+            response.append(sobjstr)
+        respstr = json.dumps(response)
+        
+        return respstr
+    except:
+        return"Invalid Credentials"
 
+def addcredential(request,session):
+    try:
+        print "try to add credential un:%s pw:%s"%(request.POST['USER_TOKEN'],request.POST['USER_TENANT'])
+        os_user = ksclient.Client(insecure=True,token=request.POST['USER_TOKEN'],tenant_name=request.POST['USER_TENANT'],auth_url=_auth_url)
+        #pprint("glint recieved a valid user token for %s"%request.POST['USER_ID'])
+        print "Valid user"
+        cred_data = eval(request.POST['CREDDATA'])
+           
+        usr = _auto_register_user(request)
+        
+        print "find site with %s"%cred_data['site_id']
+        ste = session.query(Site).filter_by(id=cred_data['site_id']).all()
+        #ste = site.objects.filter(pk=cred_data['site_id'])
+        
+        print "add credential with %s"%cred_data
+        
+        #user site and tenent need to be unique
+        #cred = session.query(Credential).filter_by(user=usr.id).all()
+        cred = session.query(Credential).filter_by(user=usr,site=ste,tenent=cred_data['tenent']).all()
+        if len(cred) is 0:
+            print "credentials does not exist for this user/site/tenent combo so create it"
+            
+            cred = Credential(user=usr,site=ste[0],tenent=cred_data['tenent'],un=cred_data['username'],pw=cred_data['password'])
+            session.commit()
+            #cred.save()
+        else:
+            print "credentials exists for this user/site/tenent combo, assume an update"
+            cred[0].un=cred_data['username']
+            cred[0].pw=cred_data['password']
+            #cred[0].save()
+            session.commit()
+        return {"Result":"Sites: add Credential"}
+    except:
+        return {"Result":"Invalid Credentials"}
+    
 
 
     
