@@ -17,7 +17,7 @@ class glint_api(object):
         self.log.addHandler(fh)
         
         #setup configuration to talk to glint
-        cfg_f = yaml.load( open("api/%s"%glint_cfg,'r') )
+        cfg_f = yaml.load( open("glintwo/api/%s"%glint_cfg,'r') )
         self.glint_url=cfg_f['glint_url']
         self.auth_url=cfg_f['auth_url']
         self.un=cfg_f['keystone_un']
