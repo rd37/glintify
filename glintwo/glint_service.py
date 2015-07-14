@@ -80,6 +80,7 @@ def getImages(request,session):
         #usr = session.query(User).filter_by(username=user_name,tenent=tenant_name).all()
         creds = session.query(Credential).filter_by(user=usr).all()
         #creds=credential.objects.filter(user=usr)
+        print "Creds are %s"%creds
         for cred in creds:
             print "found cred %s"%cred
         
