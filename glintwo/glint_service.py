@@ -146,7 +146,7 @@ def addcredential(request,session):
         print "Valid user"
         cred_data = eval(request.POST['CREDDATA'])
            
-        usr = _auto_register_user(request)
+        usr = _auto_register_user(request,session)
         
         print "find site with %s"%cred_data['site_id']
         ste = session.query(Site).filter_by(id=cred_data['site_id']).all()
