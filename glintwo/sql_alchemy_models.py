@@ -6,6 +6,7 @@ Created on Jul 13, 2015
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Sequence
+from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
@@ -13,7 +14,9 @@ class Credential(Base):
     __tablename__ = 'credentials'
     id = Column(Integer, Sequence('credential_id_seq'), primary_key=True)
     user = Column(Integer,ForeignKey("users.id"), nullable=False)
+    user_child = relationship("User")
     site = Column(Integer,ForeignKey("sites.id"), nullable=False)
+    site_child = relationship("Site")
     un = Column(String)
     pw = Column(String)
     tenent = Column(String)
