@@ -68,7 +68,7 @@ class GlintService(object):
     map.connect('alchemy_get', '/alchemy_get/{un}', method='alchemy_get')
     
     #url(r'^/imagedistribution/$', jsonservices.getImages,name='getImages'),
-    map.connect('image_dist/imagedistribution', 'image_dist/imagedistribution/', method='getImages')
+    map.connect('image_dist/imagedistribution', 'image_dist/imagedistribution', method='getImages')
     
     @webob.dec.wsgify
     def __call__(self, req):
