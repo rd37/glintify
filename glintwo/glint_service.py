@@ -130,7 +130,7 @@ def listsites(request,session):
         
         response = []
         for sobj in s:
-            sobjstr = '{"name":"%s","url":"%s:%s/%s","authport":"%s","version":"%s","type":"%s","pk":"%s"}'%(sobj.name,sobj.url,sobj.authport,sobj.version,sobj.authport,sobj.version,sobj.type,sobj.pk)
+            sobjstr = '{"name":"%s","url":"%s:%s/%s","authport":"%s","version":"%s","type":"%s","pk":"%s"}'%(sobj.name,sobj.url,sobj.authport,sobj.version,sobj.authport,sobj.version,sobj.type,sobj.id)
             response.append(sobjstr)
         respstr = json.dumps(response)
         
