@@ -156,7 +156,7 @@ def addcredential(request,session):
         
         #user site and tenent need to be unique
         #cred = session.query(Credential).filter_by(user=usr.id).all()
-        cred = session.query(Credential).filter_by(user=usr,site=ste,tenent=cred_data['tenent']).all()
+        cred = session.query(Credential).filter_by(user=usr.id,site=ste.id,tenent=cred_data['tenent']).all()
         if len(cred) is 0:
             print "credentials does not exist for this user/site/tenent combo so create it"
             
@@ -170,9 +170,9 @@ def addcredential(request,session):
             cred[0].pw=cred_data['password']
             #cred[0].save()
             session.commit()
-        return {"Result":"Sites: add Credential"}
-    except:
-        return {"Result":"Invalid Credentials"}
+        return json.dumps({"Result":"Sites: add Credential"})
+    except Exception as e:
+        return json.dumps({"Result":"%s"%e})
     
 
 
