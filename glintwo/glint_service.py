@@ -113,6 +113,7 @@ def createsite(request,session):
         
         s=Site(name=site_data['name'],url=url_str.group(0),authport=port_version_array[0],version=port_version_array[1],type=site_data['disk_format'])
         #s.save()
+        session.add(s)
         session.commit()
         print "create site complete with %s"%s.id
         return {"Result":"Success","site_id":s.id}
@@ -159,6 +160,7 @@ def addcredential(request,session):
             print "credentials does not exist for this user/site/tenent combo so create it"
             
             cred = Credential(user=usr,site=ste[0],tenent=cred_data['tenent'],un=cred_data['username'],pw=cred_data['password'])
+            session.add(cred)
             session.commit()
             #cred.save()
         else:
