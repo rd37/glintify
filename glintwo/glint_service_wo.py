@@ -90,7 +90,11 @@ class GlintService(object):
  
     def getImages(self,req):
         print "Get Images"
-        return glintclient.getImages(req);
+        session = self.Session()
+        response = glintclient.getImages(req,session);
+        return webob.Response(
+            body='%s'%response
+        )
         
     def alchemy_get(self,req,un):
         print "getting alcehcmy"
