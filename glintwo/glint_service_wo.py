@@ -67,6 +67,9 @@ class GlintService(object):
     map.connect('django_test', '/django', method='django_test')
     map.connect('alchemy_get', '/alchemy_get/{un}', method='alchemy_get')
     
+    #url(r'^/imagedistribution/$', jsonservices.getImages,name='getImages'),
+    map.connect('imagedistribution', '/imagedistribution/', method='getImages')
+    
     @webob.dec.wsgify
     def __call__(self, req):
         '''
@@ -85,6 +88,10 @@ class GlintService(object):
         req.link = link
         return getattr(self, method)(req, **kwargs)
  
+    def getImages(self,req):
+        print "Get Images"
+        return glintclient.getImages(req);
+        
     def alchemy_get(self,req,un):
         print "getting alcehcmy"
         session = self.Session()
