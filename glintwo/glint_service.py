@@ -85,8 +85,8 @@ def getImages(request,session):
             print "found cred %s"%cred
         
         return sites
-    except:
-        print "Exception occurred"
+    except Exception as e:
+        print "Exception occurred %s"%e
 
 
 
