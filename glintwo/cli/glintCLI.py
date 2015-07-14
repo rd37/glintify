@@ -9,7 +9,7 @@ import glintViewer as gl_view
 #print "cwd %s"%os.getcwd()
 
 sys.path.insert(1,'%s'%os.getcwd())
-from api.glint_api import glint_api
+from glintwo.api.glint_api import glint_api
 
 def env(*vars, **kwargs):
     """ Try to find the first environnental variable in vars,
