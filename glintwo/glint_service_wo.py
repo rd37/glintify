@@ -92,6 +92,7 @@ class GlintService(object):
         print "Get Images"
         session = self.Session()
         response = glintclient.getImages(req,session);
+        print "Received Response %s"%response
         return webob.Response(
             body='%s'%response
         )
