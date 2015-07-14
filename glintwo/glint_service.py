@@ -116,9 +116,9 @@ def createsite(request,session):
         session.add(s)
         session.commit()
         print "create site complete with %s"%s.id
-        return {"Result":"Success","site_id":s.id}
+        return json.dumps({"Result":"Success","site_id":s.id})
     except:
-        return {"Result":"Invalid Credentials or Site already in Use"}
+        return json.dumps({"Result":"Invalid Credentials or Site already in Use"})
     
 def listsites(request,session):
     print "try to list sites-oK"
@@ -135,7 +135,7 @@ def listsites(request,session):
         
         return respstr
     except:
-        return"Invalid Credentials"
+        return json.dumps({"error":"Invalid Credentials"})
 
 def addcredential(request,session):
     try:
