@@ -85,7 +85,7 @@ def getImages(request,session):
         for cred in creds:
             try:
                 #print "Try to Create Keystone Client using un:%s pw:%s ten:%s auth_url: %s:%s/v2.0"%(cred.un,cred.pw,cred.tenent,cred.site.url,cred.site.authport)
-                _keystone_ = ksclient.Client(insecure=True,username=cred.un,password=cred.pw,tenant_name=cred.tenent,auth_url="%s:%s/%s"%(cred.site.url,cred.site.authport,cred.site.version))
+                _keystone_ = ksclient.Client(insecure=True,username=cred.un,password=cred.pw,tenant_name=cred.tenent,auth_url="%s:%s/%s"%(cred.site_child.url,cred.site_child.authport,cred.site_child.version))
                 #print "Success"
                 images = _get_images(_keystone_)
                 sites.append({"name":"%s"%(cred.site.name),"tenent":"%s"%(cred.tenent)})
