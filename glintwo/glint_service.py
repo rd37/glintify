@@ -4,7 +4,7 @@ import glanceclient,yaml
 
 import json,datetime,threading,time,os,sys,re
 
-from sql_alchemy_models import Base,User
+from sql_alchemy_models import Base,User,Site,Credential
 
 stream = open("glint_services.yaml", 'r')
 cfg = yaml.load(stream)
@@ -77,6 +77,11 @@ def getImages(request,session):
                 site_list.append({"name":"%s"%(_root_site),"tenent":"%s"%(request.POST['USER_TENANT']),"is_public":"%s"%image.is_public,"is_owner":"False"})
             img_obj['sites']=site_list
             rows.append(img_obj)
+        #usr = session.query(User).filter_by(username=user_name,tenent=tenant_name).all()
+        creds = session.query(Credential).filter_by(user=usr).all()
+        #creds=credential.objects.filter(user=usr)
+        for cred in creds:
+            print "found cred %s"%cred
         
         return sites
     except:
