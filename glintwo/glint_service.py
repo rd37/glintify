@@ -83,11 +83,48 @@ def getImages(request,session):
         #creds=credential.objects.filter(user=usr)
         print "Creds are %s"%creds
         for cred in creds:
-            print "found cred %s"%cred
+            try:
+                #print "Try to Create Keystone Client using un:%s pw:%s ten:%s auth_url: %s:%s/v2.0"%(cred.un,cred.pw,cred.tenent,cred.site.url,cred.site.authport)
+                _keystone_ = ksclient.Client(insecure=True,username=cred.un,password=cred.pw,tenant_name=cred.tenent,auth_url="%s:%s/%s"%(cred.site.url,cred.site.authport,cred.site.version))
+                #print "Success"
+                images = _get_images(_keystone_)
+                sites.append({"name":"%s"%(cred.site.name),"tenent":"%s"%(cred.tenent)})
+                for index,image in enumerate(images):
+                    #print "found %s"%image.name
+                    inserted=False
+                    for row in rows:
+                        #print "In rows found image %s"%row['image']
+                        if row['image'] == image.name:
+                            if image.owner == _keystone_.auth_tenant_id:
+                                row['sites'].append({"name":"%s"%(cred.site.name),"tenent":"%s"%(cred.tenent),"is_public":"%s"%image.is_public,"is_owner":"True"})
+                            else:
+                                row['sites'].append({"name":"%s"%(cred.site.name),"tenent":"%s"%(cred.tenent),"is_public":"%s"%image.is_public,"is_owner":"False"})
+                            inserted=True
+                        
+                    if not inserted:
+                        #print "found a new Image list" 
+                        img_obj = {}
+                        img_obj['image']=image.name
+                        img_obj['disk_format']=image.disk_format
+                        img_obj['container_format']=image.container_format
+                        site_list = []
+                        if image.owner == _keystone_.auth_tenant_id:
+                            site_list.append({"name":"%s"%(cred.site.name),"tenent":"%s"%(cred.tenent),"is_public":"%s"%image.is_public,"is_owner":"True"})
+                        else:
+                            site_list.append({"name":"%s"%(cred.site.name),"tenent":"%s"%(cred.tenent),"is_public":"%s"%image.is_public,"is_owner":"False"})
+                        img_obj['sites']=site_list
+                        rows.append(img_obj)
+            except Exception as e:
+                print "Error Occurred getting images from %s error %s"%(cred.site.url,e)
         
-        return sites
+        json_msg['sites']=sites
+        json_msg['rows']=rows
+        
+        respstr = json.dumps(json_msg)
+        
+        return respstr
     except Exception as e:
-        print "Exception occurred %s"%e
+        return json.dumps({"Error":"%s"%e})
 
 def createsite(request,session):
     try:
