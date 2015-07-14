@@ -78,6 +78,7 @@ def getImages(request,session):
             img_obj['sites']=site_list
             rows.append(img_obj)
         #usr = session.query(User).filter_by(username=user_name,tenent=tenant_name).all()
+        print "Filter creds by user %s"%usr
         creds = session.query(Credential).filter_by(user=usr).all()
         #creds=credential.objects.filter(user=usr)
         print "Creds are %s"%creds
