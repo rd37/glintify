@@ -124,6 +124,7 @@ def listsites(request,session):
     print "try to list sites-oK"
     try:
         os_user = ksclient.Client(insecure=True,token=request.POST['USER_TOKEN'],tenant_name=request.POST['USER_TENANT'],auth_url=_auth_url)
+        print "Creds ok lets query sites"
         s = session.query(Site).all()
         #s = site.objects.filter()
         
@@ -134,8 +135,8 @@ def listsites(request,session):
         respstr = json.dumps(response)
         
         return respstr
-    except:
-        return json.dumps({"error":"Invalid Credentials"})
+    except Exception as e:
+        return json.dumps({"error":"%s"%e})
 
 def addcredential(request,session):
     try:
