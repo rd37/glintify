@@ -30,7 +30,7 @@ def _auto_register_user(request,session):
     user_name=request.POST['USER_ID']
     token=request.POST['USER_TOKEN']
     tenant_name=request.POST['USER_TENANT']
-    usr = session.query(User).filter_by(username=user_name,tenent=tenant_name)
+    usr = session.query(User).filter_by(username=user_name,tenent=tenant_name).all()
     #usr = User.objects.filter(username=user_name,tenent=tenant_name)
     print "found %s"%usr
     if len(usr) is 0:
