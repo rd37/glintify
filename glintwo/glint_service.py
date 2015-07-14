@@ -62,7 +62,23 @@ def getImages(request,session):
         json_msg = {}
         rows = []
         sites = []
-        return images
+        
+        sites.append({"name":"%s"%(_root_site),"tenent":"%s"%(request.POST['USER_TENANT'])})
+        for index,image in enumerate(images):
+            #print "found Image locally %s"%image
+            img_obj = {}
+            img_obj['image']=image.name
+            img_obj['disk_format']=image.disk_format
+            img_obj['container_format']=image.container_format
+            site_list = []
+            if image.owner == keystone.auth_tenant_id:
+                site_list.append({"name":"%s"%(_root_site),"tenent":"%s"%(request.POST['USER_TENANT']),"is_public":"%s"%image.is_public,"is_owner":"True"})
+            else:
+                site_list.append({"name":"%s"%(_root_site),"tenent":"%s"%(request.POST['USER_TENANT']),"is_public":"%s"%image.is_public,"is_owner":"False"})
+            img_obj['sites']=site_list
+            rows.append(img_obj)
+        
+        return sites
     except:
         print "Exception occurred"
 
