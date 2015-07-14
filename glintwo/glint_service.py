@@ -88,7 +88,7 @@ def getImages(request,session):
                 _keystone_ = ksclient.Client(insecure=True,username=cred.un,password=cred.pw,tenant_name=cred.tenent,auth_url="%s:%s/%s"%(cred.site_child.url,cred.site_child.authport,cred.site_child.version))
                 #print "Success"
                 images = _get_images(_keystone_)
-                sites.append({"name":"%s"%(cred.site.name),"tenent":"%s"%(cred.tenent)})
+                sites.append({"name":"%s"%(cred.site_child.name),"tenent":"%s"%(cred.tenent)})
                 for index,image in enumerate(images):
                     #print "found %s"%image.name
                     inserted=False
@@ -96,9 +96,9 @@ def getImages(request,session):
                         #print "In rows found image %s"%row['image']
                         if row['image'] == image.name:
                             if image.owner == _keystone_.auth_tenant_id:
-                                row['sites'].append({"name":"%s"%(cred.site.name),"tenent":"%s"%(cred.tenent),"is_public":"%s"%image.is_public,"is_owner":"True"})
+                                row['sites'].append({"name":"%s"%(cred.site_child.name),"tenent":"%s"%(cred.tenent),"is_public":"%s"%image.is_public,"is_owner":"True"})
                             else:
-                                row['sites'].append({"name":"%s"%(cred.site.name),"tenent":"%s"%(cred.tenent),"is_public":"%s"%image.is_public,"is_owner":"False"})
+                                row['sites'].append({"name":"%s"%(cred.site_child.name),"tenent":"%s"%(cred.tenent),"is_public":"%s"%image.is_public,"is_owner":"False"})
                             inserted=True
                         
                     if not inserted:
@@ -109,13 +109,13 @@ def getImages(request,session):
                         img_obj['container_format']=image.container_format
                         site_list = []
                         if image.owner == _keystone_.auth_tenant_id:
-                            site_list.append({"name":"%s"%(cred.site.name),"tenent":"%s"%(cred.tenent),"is_public":"%s"%image.is_public,"is_owner":"True"})
+                            site_list.append({"name":"%s"%(cred.site_child.name),"tenent":"%s"%(cred.tenent),"is_public":"%s"%image.is_public,"is_owner":"True"})
                         else:
-                            site_list.append({"name":"%s"%(cred.site.name),"tenent":"%s"%(cred.tenent),"is_public":"%s"%image.is_public,"is_owner":"False"})
+                            site_list.append({"name":"%s"%(cred.site_child.name),"tenent":"%s"%(cred.tenent),"is_public":"%s"%image.is_public,"is_owner":"False"})
                         img_obj['sites']=site_list
                         rows.append(img_obj)
             except Exception as e:
-                print "Error Occurred getting images from %s error %s"%(cred.site.url,e)
+                print "Error Occurred getting images from %s error %s"%(cred.site_child.url,e)
         
         json_msg['sites']=sites
         json_msg['rows']=rows
