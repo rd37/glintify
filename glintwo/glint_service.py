@@ -160,7 +160,7 @@ def addcredential(request,session):
         if len(cred) is 0:
             print "credentials does not exist for this user/site/tenent combo so create it"
             
-            cred = Credential(user=usr,site=ste[0],tenent=cred_data['tenent'],un=cred_data['username'],pw=cred_data['password'])
+            cred = Credential(user=usr.id,site=ste[0].id,tenent=cred_data['tenent'],un=cred_data['username'],pw=cred_data['password'])
             session.add(cred)
             session.commit()
             #cred.save()
