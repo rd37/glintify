@@ -65,7 +65,7 @@ class imageremovehandler():
                 #print "now generate credentials"
                 cred = self.session.query(Credential).filter_by(user=user_name[0].id,site=src_site_name[0].id,tenent=self.jsonMsgObj['image_src_tenent']).all()
                 #cred = credential.objects.filter(user=user_name,site=src_site_name,tenent=self.jsonMsgObj['image_src_tenent'])
-                print "now get keystone client"
+                print "now get keystone client with cred %s"%cred
                 keystone_src = ksclient.Client(insecure=True,auth_url="%s:%s/%s"%(src_site_name[0].url,src_site_name[0].authport,src_site_name[0].version),username=cred[0].un,password=cred[0].pw,tenant_name=cred[0].tenent)
             print "now create service ep"
             glance_ep_src = keystone_src.service_catalog.url_for(service_type='image',endpoint_type='publicURL')
