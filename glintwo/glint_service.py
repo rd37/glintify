@@ -164,7 +164,7 @@ def deletesite(request,session):
         user_name=request.POST['USER_ID']
         site_id = request.POST['SITE_ID']
         
-        s = session.query(Site).filter_by(id=site_id).all()
+        s = session.query(Site).filter_by(id=site_id).first()
         #s=site.objects.filter(pk=site_id)
         print "Filter credentials for site %s"%s
         
