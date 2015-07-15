@@ -200,6 +200,7 @@ class imagecopyhandler():
             print "done update with data upload"
             
         except Exception as e:
+            print "Error Occured on upload %s"%e
             return json.dumps({"error":"error uploading image occurred"})
             
         print "done remote file transfer"
