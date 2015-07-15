@@ -102,7 +102,7 @@ class imagecopyhandler():
     local_tenent=''
     
     
-    def __init__(self,request,diskformat,containerformat,imagename,remotesite,remotetenent,sourcesite,sourcetenent):
+    def __init__(self,request,diskformat,containerformat,imagename,remotesite,remotetenent,sourcesite,sourcetenent,session):
         self.container_format=containerformat
         self.disk_format=diskformat
         self.img_name=imagename
@@ -113,6 +113,7 @@ class imagecopyhandler():
         self.local_user=request.POST['USER_ID']
         self.user_token=request.POST['USER_TOKEN']
         self.local_tenent=request.POST['USER_TENANT']
+        self.session=session
         if sourcesite == _root_site:
             self.copy_from_root=True
         else:

@@ -25,7 +25,7 @@ def save(request,session):
         print jsonMsgObj
         if jsonMsgObj['op'] == "add_img":
             print "Create image handler and go for it"
-            img_hndlr = imagecopyhandler(request,jsonMsgObj['disk_format'],jsonMsgObj['container_format'],jsonMsgObj['image_name'],jsonMsgObj['image_dest'],jsonMsgObj['image_dest_tenent'],jsonMsgObj['img_src'][0]['site_name'],jsonMsgObj['img_src'][0]['tenent_name'])
+            img_hndlr = imagecopyhandler(request,jsonMsgObj['disk_format'],jsonMsgObj['container_format'],jsonMsgObj['image_name'],jsonMsgObj['image_dest'],jsonMsgObj['image_dest_tenent'],jsonMsgObj['img_src'][0]['site_name'],jsonMsgObj['img_src'][0]['tenent_name'],session)
             image_copies.append(img_hndlr)
             idx = image_copies.index(img_hndlr, )
             print "k add image now and return thread id %s"%idx
@@ -33,7 +33,7 @@ def save(request,session):
             return '{"thread_id":%s}'%idx
         elif jsonMsgObj['op'] == "rem_img":
             print "try to remove image"
-            img_hndlr = imageremovehandler(request,jsonMsgObj)
+            img_hndlr = imageremovehandler(request,jsonMsgObj,session)
             image_copies.append(img_hndlr)
             idx = image_copies.index(img_hndlr,)
             img_hndlr.start()
