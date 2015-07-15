@@ -178,7 +178,7 @@ def deletesite(request,session):
             s.delete()
             return json.dumps({"Result":"Successful Delete"})
         else:
-            return json.dumps({"Result","sites: site deleted %s"%site_id})
+            return json.dumps({"Result":"sites: site deleted %s"%site_id})
         
     except Exception as e:
         return json.dumps({"Result":"Invalid Credentials Who knows %s"%e})
