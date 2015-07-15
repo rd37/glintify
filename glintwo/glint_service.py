@@ -156,6 +156,33 @@ def createsite(request,session):
         return json.dumps({"Result":"Success","site_id":s.id})
     except:
         return json.dumps({"Result":"Invalid Credentials or Site already in Use"})
+
+def deletesite(request,session):
+    try:
+        os_user = ksclient.Client(insecure=True,token=request.POST['USER_TOKEN'],tenant_name=request.POST['USER_TENANT'],auth_url=_auth_url)
+        #pprint("glint recieved a valid user token for %s"%request.POST['USER_ID'])
+        user_name=request.POST['USER_ID']
+        site_id = request.POST['SITE_ID']
+        
+        s = session.query(Site).filter_by(id=site_id).all()
+        #s=site.objects.filter(pk=site_id)
+        print "Filter credentials for site %s"%s
+        
+        cred = session.query(Credential).filter_by(site=s.id).all()
+        #cred = credential.objects.filter(site=s)
+        print "Creds %s"%cred
+        if len(cred) == 0:
+        #print "create site with %s"%site_data
+            #s=site.objects.filter(pk=site_id)
+            print "Delete Site"
+            s.delete()
+            return json.dumps({"Result":"Successful Delete"})
+        else:
+            return json.dumps({"Result","sites: site deleted %s"%site_id})
+        
+    except Exception as e:
+        return json.dumps({"Result":"Invalid Credentials Who knows %s"%e})
+    
     
 def listsites(request,session):
     print "try to list sites-oK"
