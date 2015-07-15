@@ -66,6 +66,8 @@ class GlintService(object):
     map.connect('image_dist/imagedistribution', '/image_dist/imagedistribution/', method='getImages')
     map.connect('image_dist/addcredential', '/image_dist/addcredential/', method='addCredential')
     map.connect('image_dist/deletecredential', '/image_dist/deletecredential/', method='deleteCredential')
+    map.connect('image_dist/hascredential', '/image_dist/hascredential/', method='hasCredential')
+    map.connect('image_dist/getcredential', '/image_dist/getcredential/', method='getCredential')
     map.connect('image_dist/listsites', '/image_dist/listsites/', method='listSites')
     map.connect('image_dist/createsite', '/image_dist/createsite/', method='createSite')
     map.connect('image_dist/deletesite', '/image_dist/deletesite/', method='deleteSite')
@@ -131,7 +133,25 @@ class GlintService(object):
         print "Received Response %s"%response
         return webob.Response(
             body='%s'%response
-        )    
+        ) 
+           
+    def hasCredential(self,req):
+        print "Has Credential"
+        session = self.Session()
+        response = glintclient.hascredential(req,session);
+        print "Received Response %s"%response
+        return webob.Response(
+            body='%s'%response
+        )   
+        
+    def getCredential(self,req):
+        print "Get Credential"
+        session = self.Session()
+        response = glintclient.getcredential(req,session);
+        print "Received Response %s"%response
+        return webob.Response(
+            body='%s'%response
+        )   
         
     def deleteCredential(self,req):
         print "Add Credential"

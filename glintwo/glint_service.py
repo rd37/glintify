@@ -269,6 +269,89 @@ def deletecredential(request,session):
         
         return json.dumps({"Result":"Failure Removing Credential %s"%e})
     
+
+def getcredential(request,session):
+    try:
+        #print "check if request is valid, then check if user has a credential for this site"
+        os_user = ksclient.Client(insecure=True,token=request.POST['USER_TOKEN'],tenant_name=request.POST['USER_TENANT'],auth_url=_auth_url)
+        #pprint("glint recieved a valid user token for %s"%request.POST['USER_ID'])
+        site_id = request.POST['SITE_ID']
+        user_name = request.POST['USER_ID']
+        #ck_type = request.POST['CK_TYPE']
+        #print "have un: %s and site id :%s "%(user_name,site_id)
+        
+        usr = session.query(User).filter_by(username=user_name,tenent=request.POST['USER_TENANT']).all()
+        #usr = user.objects.filter(username=user_name,tenent=request.POST['USER_TENANT'])
+        #print "need to get past this %s"%usr
+        #user_id = usr[0].pk
+        #user_id = user_obj[0].pk
+        #print "site id hopefully %s and user name %s id is %s"%(site_id,user_name,user_id)
+        #cred = None
+        #if ck_type == "ONE":
+        cred = session.query(Credential).filter_by(user=usr[0].id,site=site_id).all()
+        #cred = credential.objects.filter(user=usr[0].pk,site=site_id)
+        
+        if len(cred) is 1:
+            #print "Found Credential Return as Json obj %s"%cred
+            cred_obj={}
+            cred_obj['cred_id']=cred[0].un
+            cred_obj['tenant']=cred[0].tenent
+            return json.dumps(cred_obj)
+        else:
+            return json.dumps({"Result":"Valid User Credentials, but site %s does not have your credentials for user %s"%(site_id,usr[0].id)})
+        #else:
+        #    cred = credential.objects.filter(site=site_id)
+    except:
+        return json.dumps({"Result":"Invalid User Credentials"})
+
+def hascredential(request,session):
+    try:
+        #print "check if request is valid, then check if user has a credential for this site"
+        os_user = ksclient.Client(insecure=True,token=request.POST['USER_TOKEN'],tenant_name=request.POST['USER_TENANT'],auth_url=_auth_url)
+        #pprint("glint recieved a valid user token for %s"%request.POST['USER_ID'])
+        site_id = request.POST['SITE_ID']
+        user_name = request.POST['USER_ID']
+        ck_type = request.POST['CK_TYPE']
+        #print "have un: %s and site id :%s "%(user_name,site_id)
+        
+        usr = session.query(User).filter_by(username=user_name,tenent=request.POST['USER_TENANT']).all()
+        #usr = user.objects.filter(username=user_name,tenent=request.POST['USER_TENANT'])
+        #print "need to get past this %s"%usr
+        #user_id = usr[0].pk
+        #user_id = user_obj[0].pk
+        #print "site id hopefully %s and user name %s id is %s"%(site_id,user_name,user_id)
+        cred = None
+        if ck_type == "ONE":
+            cred = session.query(Credential).filter_by(user=usr[0].id,site=site_id).all()
+            #cred = credential.objects.filter(user=user_id,site=site_id)
+        else:
+            cred = session.query(Credential).filter_by(site=site_id).all()
+            #cred = credential.objects.filter(site=site_id)
+        #print "for user %s on site %s we found cred %s"%(user_id,site_id,cred)
+        if len(cred) == 0:
+            #str_js = '{"result":False,"error":False}'
+            str_js={}
+            str_js['result']=False
+            str_js['error']=False
+            #ret_arr = []
+            #ret_arr.append(str_js)
+            return json.dumps(str_js)
+        else: 
+            str_js={}
+            str_js['result']=True
+            str_js['error']=False
+            #ret_arr = []
+            #ret_arr.append(str_js)
+            return json.dumps(str_js)
+    except:
+        e = sys.exc_info()[0]
+        print "Exception %s"%e
+        str_js={}
+        str_js['result']=False
+        str_js['error']=True
+        #ret_arr = []
+        #ret_arr.append(str_js)
+        return json.dumps(str_js)
     
     
 
