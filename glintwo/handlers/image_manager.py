@@ -63,8 +63,8 @@ class imageremovehandler():
                 user_name = self.session.query(User).filter_by(username=self.local_user,tenent=self.local_tenent).all()
                 #user_name = user.objects.filter(username=self.local_user,tenent=self.local_tenent)
                 #print "now generate credentials"
-                print "Found sites %s"%src_site_name
-                print "found user %s"%user_name
+                print "Found sites %s"%src_site_name[0].id
+                print "found user %s"%user_name[0].id
                 cred = self.session.query(Credential).filter_by(user=user_name[0].id,site=src_site_name[0].id,tenent=self.jsonMsgObj['image_src_tenent']).all()
                 #cred = credential.objects.filter(user=user_name,site=src_site_name,tenent=self.jsonMsgObj['image_src_tenent'])
                 print "now get keystone client with cred %s"%cred
