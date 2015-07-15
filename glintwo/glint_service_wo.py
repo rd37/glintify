@@ -65,6 +65,7 @@ class GlintService(object):
     #url(r'^/imagedistribution/$', jsonservices.getImages,name='getImages'),
     map.connect('image_dist/imagedistribution', '/image_dist/imagedistribution/', method='getImages')
     map.connect('image_dist/addcredential', '/image_dist/addcredential/', method='addCredential')
+    map.connect('image_dist/deletecredential', '/image_dist/deletecredential/', method='deleteCredential')
     map.connect('image_dist/listsites', '/image_dist/listsites/', method='listSites')
     map.connect('image_dist/createsite', '/image_dist/createsite/', method='createSite')
     map.connect('image_dist/deletesite', '/image_dist/deletesite/', method='deleteSite')
@@ -127,6 +128,15 @@ class GlintService(object):
         print "Add Credential"
         session = self.Session()
         response = glintclient.addcredential(req,session);
+        print "Received Response %s"%response
+        return webob.Response(
+            body='%s'%response
+        )    
+        
+    def deleteCredential(self,req):
+        print "Add Credential"
+        session = self.Session()
+        response = glintclient.deletecredential(req,session);
         print "Received Response %s"%response
         return webob.Response(
             body='%s'%response

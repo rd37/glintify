@@ -175,10 +175,11 @@ def deletesite(request,session):
         #print "create site with %s"%site_data
             #s=site.objects.filter(pk=site_id)
             print "Delete Site"
-            s.delete()
+            session.delete(s)
+            session.commit()
             return json.dumps({"Result":"Successful Delete"})
         else:
-            return json.dumps({"Result":"sites: site deleted %s"%site_id})
+            return json.dumps({"Result":"There are still credentials on this site %s"%site_id})
         
     except Exception as e:
         return json.dumps({"Result":"Invalid Credentials Who knows %s"%e})
@@ -238,6 +239,37 @@ def addcredential(request,session):
     except Exception as e:
         return json.dumps({"Result Error":"error %s"%e})
     
-
+def deletecredential(request,session):
+    try:
+        print "Try to Remove Credential with %s"%request.POST['USER_TOKEN']
+        #print "check if request is valid, then check if user has a credential for this site"
+        os_user = ksclient.Client(insecure=True,token=request.POST['USER_TOKEN'],tenant_name=request.POST['USER_TENANT'],auth_url=_auth_url)
+    
+        site_id = request.POST['SITE_ID']
+        user_name = request.POST['USER_ID']
+        #ck_type = request.POST['CK_TYPE']
+        print "have un: %s and site id :%s "%(user_name,site_id)
+        
+        usr = session.query(User).filter_by(username=user_name,tenent=request.POST['USER_TENANT']).all()
+        #usr = user.objects.filter(username=user_name,tenent=request.POST['USER_TENANT'])
+        #print "need to get past this %s"%usr
+        #user_id = usr[0].id
+        
+        cred = session.query(Credential).filter_by(user=usr[0].id,site=site_id).first()
+        #cred = credential.objects.filter(user=user_id,site=site_id)
+        print "Found Cred %s"%cred
+        #cred.delete()
+        session.delete(cred)
+        session.commit()
+        print "Cred Removed"
+        
+        return json.dumps({"Result":"Success removing Credential"})
+        #print "for user %s on site %s we found cred %s"%(user_id,site_id,cred)
+    except Exception as e:
+        
+        return json.dumps({"Result":"Failure Removing Credential %s"%e})
+    
+    
+    
 
     
