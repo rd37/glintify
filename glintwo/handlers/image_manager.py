@@ -160,15 +160,15 @@ class imagecopyhandler():
                 
             image_src = glance_src.images.get(img_id)
             img_data = glance_src.images.data(image_src,True)
-            directory = "/home/rd/imgcopytmp/%s/%s_%s/"%(img_id,self.remote_site,self.remote_tenent)
+            directory = "/home/ubuntu/imgcopytmp/%s/%s_%s/"%(img_id,self.remote_site,self.remote_tenent)
             touch(directory)
             with open('%s/%s'%(directory,self.img_name),'wb') as f:
                 for data_chunk in img_data:
                     f.write(data_chunk)
             
             print "image download complete"
-        except:
-            print "error occurred on download ignore"       
+        except Exception as e:
+            return json.dumps({"error":"error Downloading Image: %s "%e })      
        
         try:
             print "Create Image Remote Upload %s,%s,%s to %s"%(self.disk_format,self.container_format,self.img_name,self.remote_site)
