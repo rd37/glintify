@@ -193,13 +193,14 @@ class imagecopyhandler():
             glance_dest = glanceclient.Client('1',glance_ep_dest,token=keystone_dest.auth_token,insecure=True)
             
             file_loc='%s%s'%(directory,self.img_name)
+            print "Upload from %s"%file_loc
             fimage = open(file_loc)
             glance_dest.images.create(name=self.img_name,is_public="False",disk_format=self.disk_format,container_format=self.container_format,owner=self.remote_tenent,data=fimage)
             
             print "done update with data upload"
             
-        except:
-            print "error uploading image occurred"
+        except Exception as e:
+            return json.dumps({"error":"error uploading image occurred"})
             
         print "done remote file transfer"
         self.status="complete"
