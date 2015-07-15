@@ -16,7 +16,7 @@ _root_site=cfg['root_site']
 
 image_copies=[]
 
-def save(request):
+def save(request,session):
     try:
         jsonMsg = request.POST['jsonMsg']
         os_user = ksclient.Client(insecure=True,token=request.POST['USER_TOKEN'],tenant_name=request.POST['USER_TENANT'],auth_url=_auth_url)

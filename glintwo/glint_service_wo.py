@@ -71,6 +71,7 @@ class GlintService(object):
     map.connect('image_dist/listsites', '/image_dist/listsites/', method='listSites')
     map.connect('image_dist/createsite', '/image_dist/createsite/', method='createSite')
     map.connect('image_dist/deletesite', '/image_dist/deletesite/', method='deleteSite')
+    map.connect('image_dist/save', '/image_dist/save/', method='Save')
     
     @webob.dec.wsgify
     def __call__(self, req):
@@ -157,6 +158,15 @@ class GlintService(object):
         print "Add Credential"
         session = self.Session()
         response = glintclient.deletecredential(req,session);
+        print "Received Response %s"%response
+        return webob.Response(
+            body='%s'%response
+        ) 
+        
+    def Save(self,req):
+        print "Save"
+        session = self.Session()
+        response = glintclient.save(req,session);
         print "Received Response %s"%response
         return webob.Response(
             body='%s'%response

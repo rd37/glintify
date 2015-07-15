@@ -8,9 +8,9 @@ import keystoneclient.v2_0.client as ksclient
 import glanceclient,yaml
 
 import json,datetime,threading,time,os,sys,re
-from sql_alchemy_models import Base,User,Site,Credential
+from glintwo.sql_alchemy_models import Base,User,Site,Credential
 
-stream = open("glint_services.yaml", 'r')
+stream = open("glintwo/glint_services.yaml", 'r')
 cfg = yaml.load(stream)
 
 _auth_url=cfg['auth_url']
