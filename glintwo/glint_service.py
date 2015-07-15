@@ -5,6 +5,7 @@ import glanceclient,yaml
 import json,datetime,threading,time,os,sys,re
 
 from sql_alchemy_models import Base,User,Site,Credential
+from glintwo.handlers.image_manager import savi_fix,imagecopyhandler,imageremovehandler
 
 stream = open("glint_services.yaml", 'r')
 cfg = yaml.load(stream)
@@ -13,11 +14,40 @@ _auth_url=cfg['auth_url']
 _glance_url=cfg['glance_url']
 _root_site=cfg['root_site']
 
+image_copies=[]
 
-def savi_fix(keystone,glance_ep):
-    if 'iam.savitestbed.ca' in keystone.auth_url:
-        return glance_ep.replace('/v1','')
-    return glance_ep    
+def save(request):
+    try:
+        jsonMsg = request.POST['jsonMsg']
+        os_user = ksclient.Client(insecure=True,token=request.POST['USER_TOKEN'],tenant_name=request.POST['USER_TENANT'],auth_url=_auth_url)
+        
+        jsonMsgObj = json.loads(jsonMsg)
+        print jsonMsgObj
+        if jsonMsgObj['op'] == "add_img":
+            print "Create image handler and go for it"
+            img_hndlr = imagecopyhandler(request,jsonMsgObj['disk_format'],jsonMsgObj['container_format'],jsonMsgObj['image_name'],jsonMsgObj['image_dest'],jsonMsgObj['image_dest_tenent'],jsonMsgObj['img_src'][0]['site_name'],jsonMsgObj['img_src'][0]['tenent_name'])
+            image_copies.append(img_hndlr)
+            idx = image_copies.index(img_hndlr, )
+            print "k add image now and return thread id %s"%idx
+            img_hndlr.start()
+            return '{"thread_id":%s}'%idx
+        elif jsonMsgObj['op'] == "rem_img":
+            print "try to remove image"
+            img_hndlr = imageremovehandler(request,jsonMsgObj)
+            image_copies.append(img_hndlr)
+            idx = image_copies.index(img_hndlr,)
+            img_hndlr.start()
+            return '{"thread_id":%s}'%idx
+        elif jsonMsgObj['op'] == "thread_update":
+            jsonMsgObj['status']=image_copies[jsonMsgObj['thread_id']].getstatus()
+            return json.dumps(jsonMsgObj)
+        
+        
+        return json.dumps({"error":"Unkown operation %s"%jsonMsg['op']})
+    except:
+        return json.dumps({"error":"Invalid Save Credentials"})
+
+    
 
 def _get_images(keystone):
     glance_ep = keystone.service_catalog.url_for(service_type='image',endpoint_type='publicURL')
