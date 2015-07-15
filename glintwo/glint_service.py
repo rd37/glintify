@@ -5,7 +5,7 @@ import glanceclient,yaml
 import json,datetime,threading,time,os,sys,re
 
 from sql_alchemy_models import Base,User,Site,Credential
-from glintwo.handlers.image_manager import savi_fix,imagecopyhandler,imageremovehandler
+from handlers.image_manager import savi_fix,imagecopyhandler,imageremovehandler
 
 stream = open("glint_services.yaml", 'r')
 cfg = yaml.load(stream)
