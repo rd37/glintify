@@ -168,7 +168,7 @@ class imagecopyhandler():
             
             print "image download complete"
         except Exception as e:
-            return json.dumps({"error":"error Downloading Image: %s "%e })      
+            print json.dumps({"error":"error Downloading Image: %s "%e })      
        
         try:
             print "Create Image Remote Upload %s,%s,%s to %s"%(self.disk_format,self.container_format,self.img_name,self.remote_site)
@@ -204,3 +204,5 @@ class imagecopyhandler():
             
         print "done remote file transfer"
         self.status="complete"
+        
+        
